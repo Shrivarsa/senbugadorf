@@ -40,8 +40,9 @@ app.add_middleware(
         "http://127.0.0.1:5173",  # Alternative localhost
         "https://*.vercel.app",   # Vercel deployments
         "https://*.netlify.app",  # Netlify deployments
-        "https://voice-insight-frontend.vercel.app",  # Your specific Vercel domain
-        "*"  # Allow all origins (configure as needed)
+        "https://enhanced-ai-companion.vercel.app",  # Your Vercel domain
+        "https://enhanced-ai-companion-*.vercel.app",  # Preview deployments
+        "*"  # Allow all origins for now
     ],
     allow_credentials=True,
     allow_methods=["*"],

@@ -1,18 +1,20 @@
 import axios from 'axios';
 import { ProcessingResult, SupportedEmotions } from '../types';
 
-// Set the FastAPI backend URL via Vite environment variable or default to your FastAPI server
+// Set the FastAPI backend URL via Vite environment variable
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 if (!API_BASE_URL) {
-  console.error('VITE_API_URL environment variable is not set');
+  throw new Error('VITE_API_URL environment variable is not set. Please check your .env file.');
 }
+
+console.log('API Base URL:', API_BASE_URL);
 
 // Create an Axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'multipart/form-data',
+    'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 second timeout
 });
@@ -75,7 +77,14 @@ export const processAudio = async (
     params.append('auto_detect', autoDetect.toString());
 
     const url = `/api/process-audio${params.toString() ? '?' + params.toString() : ''}`;
-    const response = await api.post(url, formData);
+    
+    // Use FormData content type for file uploads
+    const response = await api.post(url, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
     const totalProcessingTime = (Date.now() - startTime) / 1000;
 
     return {
@@ -100,7 +109,11 @@ export const detectLanguage = async (audioFile: File) => {
     const formData = new FormData();
     formData.append('audio_file', audioFile);
 
-    const response = await api.post('/api/detect-language', formData);
+    const response = await api.post('/api/detect-language', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -157,7 +170,12 @@ export const analyzeSentiment = async (text: string, language?: string) => {
 
     const response = await api.post(
       `/api/analyze-sentiment${params.toString() ? '?' + params.toString() : ''}`,
-      { text }
+      { text },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
     return response.data;
   } catch (error) {

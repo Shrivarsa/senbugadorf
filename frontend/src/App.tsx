@@ -160,14 +160,23 @@ function App() {
         return;
       }
 
-      const response = await fetch(`${apiUrl}/health`);
+      console.log('Checking API connection to:', apiUrl);
+      const response = await fetch(`${apiUrl}/health`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
       if (response.ok) {
-        success('Connected', 'Successfully connected to API');
+        const data = await response.json();
+        success('Connected', `API is healthy: ${data.message || 'Connected successfully'}`);
       } else {
-        error('Connection Error', 'Could not connect to API server');
+        error('Connection Error', `API returned status: ${response.status}`);
       }
     } catch (err) {
-      error('Connection Error', 'Could not reach API server. Please check your connection.');
+      console.error('API connection error:', err);
+      error('Connection Error', 'Could not reach API server. Please check your connection and API URL.');
     }
   };
   const loadConversations = () => {
