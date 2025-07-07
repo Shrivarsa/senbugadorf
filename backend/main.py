@@ -40,7 +40,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",  # Alternative localhost
         "https://*.vercel.app",   # Vercel deployments
         "https://*.netlify.app",  # Netlify deployments
-        "*"  # Allow all origins in production (configure as needed)
+        "https://voice-insight-frontend.vercel.app",  # Your specific Vercel domain
+        "*"  # Allow all origins (configure as needed)
     ],
     allow_credentials=True,
     allow_methods=["*"],

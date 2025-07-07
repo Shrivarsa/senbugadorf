@@ -2,7 +2,11 @@ import axios from 'axios';
 import { ProcessingResult, SupportedEmotions } from '../types';
 
 // Set the FastAPI backend URL via Vite environment variable or default to your FastAPI server
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  console.error('VITE_API_URL environment variable is not set');
+}
 
 // Create an Axios instance
 const api = axios.create({
@@ -10,8 +14,41 @@ const api = axios.create({
   headers: {
     'Content-Type': 'multipart/form-data',
   },
+  timeout: 30000, // 30 second timeout
 });
 
+// Add request interceptor for debugging
+api.interceptors.request.use(
+  (config) => {
+    console.log(`Making API request to: ${config.baseURL}${config.url}`);
+    return config;
+  },
+  (error) => {
+    console.error('API request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => {
+    console.log(`API response from ${response.config.url}:`, response.status);
+    return response;
+  },
+  (error) => {
+    console.error('API response error:', error);
+    if (error.code === 'ECONNABORTED') {
+      throw new Error('Request timeout - please try again');
+    }
+    if (error.response?.status === 404) {
+      throw new Error('API endpoint not found');
+    }
+    if (error.response?.status >= 500) {
+      throw new Error('Server error - please try again later');
+    }
+    return Promise.reject(error);
+  }
+);
 /**
  * Uploads the audio file and receives transcript + sentiment analysis result with precise emotions
  * @param audioFile Audio file to be processed

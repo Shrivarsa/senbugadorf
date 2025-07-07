@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useResponsiveDesign } from './hooks/useResponsiveDesign';
 import { useHapticFeedback } from './hooks/useHapticFeedback';
 import { useGestureControls } from './hooks/useGestureControls';
+import { useToast } from './components/ToastNotification';
+import Header from './components/Header';
 import ResponsiveLayout from './components/ResponsiveLayout';
 import ChatInterface from './components/ChatInterface';
 import PersonalitySelector from './components/PersonalitySelector';
@@ -69,6 +71,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 function App() {
   const { deviceInfo, config, isCompact, isMobile, isTablet } = useResponsiveDesign();
   const { triggerHaptic } = useHapticFeedback();
+  const { success, error, warning } = useToast();
   
   const [currentView, setCurrentView] = useState<'chat' | 'dashboard' | 'wellness' | 'history' | 'settings'>('chat');
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
@@ -109,6 +112,7 @@ function App() {
         setPreferences({ ...DEFAULT_PREFERENCES, ...parsed });
       } catch (error) {
         console.error('Error loading preferences:', error);
+        warning('Settings Error', 'Could not load saved preferences');
       }
     }
 
@@ -123,6 +127,7 @@ function App() {
         setEmotionHistory(parsed);
       } catch (error) {
         console.error('Error loading emotion history:', error);
+        warning('Data Error', 'Could not load emotion history');
       }
     }
 
@@ -142,8 +147,29 @@ function App() {
     if (currentEmotion) {
       document.documentElement.className = `emotion-${currentEmotion}`;
     }
+
+    // Check API connection on startup
+    checkAPIConnection();
   }, [currentEmotion]);
 
+  const checkAPIConnection = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (!apiUrl) {
+        error('Configuration Error', 'API URL not configured. Please check your environment variables.');
+        return;
+      }
+
+      const response = await fetch(`${apiUrl}/health`);
+      if (response.ok) {
+        success('Connected', 'Successfully connected to API');
+      } else {
+        error('Connection Error', 'Could not connect to API server');
+      }
+    } catch (err) {
+      error('Connection Error', 'Could not reach API server. Please check your connection.');
+    }
+  };
   const loadConversations = () => {
     const allConversations = conversationManager.getConversations();
     setConversations(allConversations);
@@ -220,17 +246,20 @@ function App() {
   const emotionalInsights = conversationManager.getEmotionalInsights(7);
 
   return (
-    <div 
-      className={`min-h-screen transition-colors duration-500 ${
-        currentEmotion ? `emotion-${currentEmotion}` : ''
-      }`}
-      {...gestureProps}
-    >
-      <ResponsiveLayout
-        currentView={currentView}
-        onViewChange={handleViewChange}
-        onNewConversation={handleNewConversation}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <Header />
+      <div 
+        className={`transition-colors duration-500 ${
+          currentEmotion ? `emotion-${currentEmotion}` : ''
+        }`}
+        {...gestureProps}
+        style={{ paddingTop: '80px' }}
       >
+        <ResponsiveLayout
+          currentView={currentView}
+          onViewChange={handleViewChange}
+          onNewConversation={handleNewConversation}
+        >
         <AnimatePresence mode="wait">
           {currentView === 'chat' && (
             <motion.div
